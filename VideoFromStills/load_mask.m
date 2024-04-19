@@ -9,6 +9,9 @@ col = floor(size(shutter, 2) /4);
 
 shutter = shutter(row+1:end-row, col+1:end-col, :);
 shutter = imresize(shutter, [target_shape(1), target_shape(2)], 'Antialiasing', true);
+
+% shutter = double(shutter);
+% shutter = (shutter - min(shutter(:))) / (max(shutter(:)) - min(shutter(:)));
 end
 
 % def load_mask(path, target_shape):

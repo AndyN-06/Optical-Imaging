@@ -27,55 +27,58 @@ figure;
 subplot(1,3,1);
 imshow(psf, []);
 title('PSF');
+set(gca, 'Visible', 'on');
 subplot(1,3,2);
 imshow(raw_data, []);
 title('Measurement');
+set(gca, 'Visible', 'on');
 subplot(1,3,3);
-imshow(shutter_mask, []);
+imshow(shutter_mask(:,:,20), []);
 title('Rolling shutter mask');
+set(gca, 'Visible', 'on');
 
 %CELL 3
-[DIMS0, DIMS1] = size(raw_data); %image dimensions
-
-py = floor(DIMS0 / 2);
-px = floor(DIMS1 /2);
-
-psf_pad = pad(psf); %function def at bottom of file
-
-h_full = fftshift(fft2(psf_pad));
-
-%CELL 4
-if simulated == true
-    forward = forward_model_combined(h_full, shutter = shutter_mask, imaging_type = 'video');
-else
-    forward = forward_model(sum(psf, 3), shutter_mask);
-end
-
-%CELL 5
-%define network hyperparameters
-input_depth = size(shutter_mask, ndims(shutter_mask));
-INPUT = 'noise';
-pad = 'reflection';
-LR = 1e-3;
-
-tv_weight = 1e-20;
-reg_noise_std = 0.05;
-
-%initialize network input
-if simulated == true
-    input_depth = 3;
-    num_iter = 20000;
-    %not sure if correct -> have to check what exactly is being done in og
-    %python code and make sure this matlab is doing same or something
-    %similar
-    noise_size = [size(shutter_mask, ndims(shutter_mask)), size(raw_data, 1), size(raw_data, 2)];
-    net_input = get_noise(input_depth, INPUT, noise_size);
-else
-    num_iter = 1000;
-    %same as above
-    noise_size = [size(raw_data, 1) * 2, size(raw_data, 2) * 2];
-    net_input = get_noise(input_depth, INPUT, noise_size);
-end
+% [DIMS0, DIMS1] = size(raw_data); %image dimensions
+% 
+% py = floor(DIMS0 / 2);
+% px = floor(DIMS1 /2);
+% 
+% psf_pad = pad(psf); %function def at bottom of file
+% 
+% h_full = fftshift(fft2(psf_pad));
+% 
+% %CELL 4
+% if simulated == true
+%     forward = forward_model_combined(h_full, shutter = shutter_mask, imaging_type = 'video');
+% else
+%     forward = forward_model(sum(psf, 3), shutter_mask);
+% end
+% 
+% %CELL 5
+% %define network hyperparameters
+% input_depth = size(shutter_mask, ndims(shutter_mask));
+% INPUT = 'noise';
+% padvar = 'reflection';
+% LR = 1e-3;
+% 
+% tv_weight = 1e-20;
+% reg_noise_std = 0.05;
+% 
+% %initialize network input
+% if simulated == true
+%     input_depth = 3;
+%     num_iter = 20000;
+%     %not sure if correct -> have to check what exactly is being done in og
+%     %python code and make sure this matlab is doing same or something
+%     %similar
+%     noise_size = [size(shutter_mask, ndims(shutter_mask)), size(raw_data, 1), size(raw_data, 2)];
+%     net_input = get_noise(input_depth, INPUT, noise_size);
+% else
+%     num_iter = 1000;
+%     %same as above
+%     noise_size = [size(raw_data, 1) * 2, size(raw_data, 2) * 2];
+%     net_input = get_noise(input_depth, INPUT, noise_size);
+% end
 
 %init network and optimizer
 
