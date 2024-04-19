@@ -1,9 +1,12 @@
 % added deep learning toolkit to matlab
+% added parallel computing toolbox
 
 %CELL 1
 %imports that I do not know what is needed yet
 %might need to activate some gpu stuff for computation -> python uses cuda
     %for this
+    % add parallel computing toolbox for this
+    % run gpuDeviceCount to see if you have gpu available for this
 %external functions added as matlab functions to directory
 
 %CELL 2
@@ -38,15 +41,15 @@ title('Rolling shutter mask');
 set(gca, 'Visible', 'on');
 
 %CELL 3
-% [DIMS0, DIMS1] = size(raw_data); %image dimensions
-% 
-% py = floor(DIMS0 / 2);
-% px = floor(DIMS1 /2);
-% 
-% psf_pad = pad(psf); %function def at bottom of file
-% 
-% h_full = fftshift(fft2(psf_pad));
-% 
+[DIMS0, DIMS1] = size(raw_data); %image dimensions
+
+py = floor(DIMS0 / 2);
+px = floor(DIMS1 /2);
+ 
+psf_pad = pad(psf); %function def at bottom of file
+ 
+h_full = fftshift(fft2(psf_pad));
+ 
 % %CELL 4
 % if simulated == true
 %     forward = forward_model_combined(h_full, shutter = shutter_mask, imaging_type = 'video');

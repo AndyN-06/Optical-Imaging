@@ -41,14 +41,7 @@ classdef forward_model < handle
         
         function output = forward_zero_pad(model, in_image)
             padded = pad_zeros(in_image);
-            output = model.Hfor(padded);
-            output = crop(output) .* model.eraser;
-        end
-        
-        function output = forward(model, in_image)
-            output = model.Hfor(in_image);
-            output = crop(output) .* model.eraser;
-        end
+            ouput = 
     end      
 end
 
