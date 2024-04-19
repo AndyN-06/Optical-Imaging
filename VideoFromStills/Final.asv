@@ -77,7 +77,6 @@ else
     net_input = get_noise(input_depth, INPUT, noise_size);
 end
 
-%init network and optimizer
 
     
 
