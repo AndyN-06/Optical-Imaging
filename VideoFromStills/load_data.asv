@@ -1,17 +1,14 @@
 function img = load_data(path, f)
+%LOAD_DATA Summary of this function goes here
+%   Detailed explanation goes here
 
-% load img and convert to double
 img = imread(path);
 img = double(img);
 
-% resize it
 hei = floor(size(img, 1) / f);
 wid = floor(size(img, 2) / f);
 
-img = imresize(img, [hei, wid], 'Antialiasing', true);
-
-% normalize it
-img = img / max(img(:));
+img = imresize(img, [hei, wid], 'Antialiasing', true
 end
 
 % def load_data(path, f):

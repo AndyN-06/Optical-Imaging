@@ -1,8 +1,14 @@
-function [outputArg1,outputArg2] = load_mask(inputArg1,inputArg2)
-%LOAD_MASK Summary of this function goes here
-%   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
+function shutter = load_mask(path, target_shape)
+% load and shape the shutter
+
+shut = load(path);
+shutter = shut.shutter_indicator;
+
+row = floor(size(shutter, 1) / 4);
+col = floor(size(shutter, 2) /4);
+
+shutter = shutter(row+1:end-row, col+1:end-col, :);
+shutter = imresize(shutter, [target_shape(1), target_shape(2)], 'Antialiasing', true);
 end
 
 % def load_mask(path, target_shape):
