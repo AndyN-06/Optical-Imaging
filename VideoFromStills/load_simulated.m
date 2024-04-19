@@ -1,8 +1,22 @@
-function [outputArg1,outputArg2] = load_simulated(inputArg1,inputArg2)
-%LOAD_SIMULATED Summary of this function goes here
-%   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
+function [meas_np, psf_np, mask_np] = load_simulated()
+% description
+
+
+downsampling_factor = 16;
+mask = load('shutter_ds.mat');
+mask_np = mask.shutter_indicator(2:end-1,:,:);
+
+meas = load('meas_simulated.mat');
+meas_np = meas.im;
+
+row = size(meas_np, 1) / 2;
+col = size(meas_np, 2) / 2;
+mask_np = mask_np(row + 1: end - row, col + 1: end - col);
+
+psf = imread('psf.tif');
+psf = imresize(psf, 1 / downsampling_factor);
+psf_np = psf(2:end,:,2);
+
 end
 
 
