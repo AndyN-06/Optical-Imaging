@@ -50,13 +50,13 @@ psf_pad = pad(psf); %function def at bottom of file
  
 h_full = fftshift(fft2(psf_pad));
  
-% %CELL 4
-% if simulated == true
-%     forward = forward_model_combined(h_full, shutter = shutter_mask, imaging_type = 'video');
-% else
-%     forward = forward_model(sum(psf, 3), shutter_mask);
-% end
-% 
+%CELL 4
+if simulated == true
+    forward = forward_model_combined(h_full, shutter = shutter_mask, imaging_type = 'video');
+else
+    forward = forward_model(sum(psf, 3), shutter_mask);
+end
+
 % %CELL 5
 % %define network hyperparameters
 % input_depth = size(shutter_mask, ndims(shutter_mask));
