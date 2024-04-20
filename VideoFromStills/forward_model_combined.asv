@@ -39,7 +39,7 @@ classdef forward_model_combined < handle
         end
         
         function output = forward(model, in_image)
-            pad_size = [model.PAD_SIZE, model.PAD_SIZE1];
+            pad_size = [model.PAD_SIZE), model.PAD_SIZE1];
             
             if (strcmp(model.imaging_type, 'spectral') || strcmp(model.imaging_type, 'video'))
                 if ndims(in_image) == 5
@@ -58,18 +58,8 @@ classdef forward_model_combined < handle
                 processed = model.Hfor(padded);
                 cropped = processed(pad_size(1)+1:end-pad_size(1), pad_size(2)+1:end-pad_size(2), :);
                 output = model.shutter_var .* cropped;
-            elseif strcmp(model.imaging_type, '2D')
-                padded = padarray(in_image, pad_size, 'replicate', 'both');
-                processed = model.Hfor(padded);
-                cropped = processed(pad_size(1)+1:end-pad_size(1), pad_size(2)+1:end-pad_size(2), :);
-                output = cropped;
-            else
-                padded = padarray(in_image, pad_size, 'replicate', 'both');
-                processed = obj.Hfor(padded);
-                cropped = processed(pad_size(1)+1:end-pad_size(1), pad_size(2)+1:end-pad_size(2), :);
-                output = sum(cropped, 1);
-            end
-        end
+            elseif strcmp(model.imaging_type, '2D
+                
     end
 end
 
