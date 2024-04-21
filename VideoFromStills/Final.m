@@ -10,20 +10,14 @@
 %external functions added as matlab functions to directory
 
 %CELL 2
-simulated = false;
-
 %load the data in
-if simulated == true
-    [raw_data, psf, shutter_mask] = load_simulated();
-else
-    downsampling_factor = 8;
+downsampling_factor = 8;
 %     raw_data = imread('meas_dart.tif');
 %     psf = imread('psf.tif');
 %     shutter_mask = load('shutter.mat');
-    raw_data = load_data('meas_dart.tif', downsampling_factor);
-    psf = load_data('psf.tif', downsampling_factor);
-    shutter_mask = load_mask('shutter.mat', size(raw_data));
-end
+raw_data = load_data('meas_dart.tif', downsampling_factor);
+psf = load_data('psf.tif', downsampling_factor);
+shutter_mask = load_mask('shutter.mat', size(raw_data));
 
 %Plot the figures
 figure;
@@ -51,11 +45,8 @@ psf_pad = pad(psf); %function def at bottom of file
 h_full = fftshift(fft2(psf_pad));
  
 %CELL 4
-if simulated == true
-    forward = forward_model_combined(h_full, shutter = shutter_mask, imaging_type = 'video');
-else
-    forward = forward_model(sum(psf, 3), shutter_mask);
-end
+
+forward = forward_model(sum(psf, 3), shutter_mask);
 
 % %CELL 5
 % %define network hyperparameters
@@ -68,16 +59,7 @@ end
 % reg_noise_std = 0.05;
 % 
 % %initialize network input
-% if simulated == true
-%     input_depth = 3;
-%     num_iter = 20000;
-%     %not sure if correct -> have to check what exactly is being done in og
-%     %python code and make sure this matlab is doing same or something
-%     %similar
-%     noise_size = [size(shutter_mask, ndims(shutter_mask)), size(raw_data, 1), size(raw_data, 2)];
-%     net_input = get_noise(input_depth, INPUT, noise_size);
-% else
-%     num_iter = 1000;
+% num_iter = 1000;
 %     %same as above
 %     noise_size = [size(raw_data, 1) * 2, size(raw_data, 2) * 2];
 %     net_input = get_noise(input_depth, INPUT, noise_size);

@@ -25,15 +25,12 @@ import utils.diffuser_utils as df
 import utils.utils_video as helper
 
 %CELL 2
-simulated = False
+% simulated = False
 
-if simulated == True:
-    meas_np, psf_np, mask_np = helper.load_simulated()
-else:
-    downsampling_factor = 8
-    meas_np = helper.load_data('data/single_shot_video/meas_dart.tif', downsampling_factor)
-    psf_np = helper.load_data('data/single_shot_video/psf.tif',downsampling_factor)
-    mask_np = helper.load_mask('./data/single_shot_video/shutter.mat', meas_np.shape)
+downsampling_factor = 8
+meas_np = helper.load_data('data/single_shot_video/meas_dart.tif', downsampling_factor)
+psf_np = helper.load_data('data/single_shot_video/psf.tif',downsampling_factor)
+mask_np = helper.load_mask('./data/single_shot_video/shutter.mat', meas_np.shape)
 
 plt.figure(figsize=(20,10))    
 plt.subplot(1,3,1);plt.title('PSF');plt.imshow(psf_np)
@@ -65,12 +62,7 @@ h_full = np.fft.fft2(np.fft.ifftshift(psf_pad))
 
 
 %CELL 4
-if simulated == True:
-    forward = df.Forward_Model_combined(h_full, 
-                                    shutter = mask_np, 
-                                    imaging_type = 'video')
-else:
-    forward = df.Forward_Model(np.sum(psf_np, axis=2), mask_np)
+forward = df.Forward_Model(np.sum(psf_np, axis=2), mask_np)
     
 %CELL 5
 # Define network hyperparameters: 
@@ -83,26 +75,18 @@ tv_weight = 1e-20
 reg_noise_std = 0.05
 
 # Initialize network input 
-if simulated == True:
-    input_depth = 3
-    num_iter = 20000
-    net_input = cu.get_noise(input_depth, INPUT, (mask_np.shape[-1], meas_np.shape[0], meas_np.shape[1])).type(dtype).detach()
-else:
-    num_iter = 10000
-    net_input = cu.get_noise(input_depth, INPUT, (meas_np.shape[0]*2, meas_np.shape[1]*2)).type(dtype).detach()
+
+num_iter = 10000
+net_input = cu.get_noise(input_depth, INPUT, (meas_np.shape[0]*2, meas_np.shape[1]*2)).type(dtype).detach()
     
 net_input_saved = net_input.detach().clone()
 noise = net_input.detach().clone()
 
-# initialize netowrk and optimizer
+# initialize network and optimizer
 
-if simulated == True:
-    NET_TYPE = 'skip3D' 
-    net = md.get_net(input_depth, NET_TYPE, pad, n_channels=3, skip_n33d=128,  skip_n33u=128,  skip_n11=4,  num_scales=5,upsample_mode='trilinear').type(dtype)
 
-else:
-    NET_TYPE = 'skip' 
-    net = md.get_net(input_depth, NET_TYPE, pad, n_channels=72, skip_n33d=128,  skip_n33u=128,  skip_n11=4,  num_scales=5,upsample_mode='bilinear').type(dtype)
+NET_TYPE = 'skip' 
+net = md.get_net(input_depth, NET_TYPE, pad, n_channels=72, skip_n33d=128,  skip_n33u=128,  skip_n11=4,  num_scales=5,upsample_mode='bilinear').type(dtype)
 
 p = [x for x in net.parameters()]
 optimizer = torch.optim.Adam(p, lr=LR)
@@ -110,30 +94,9 @@ optimizer = torch.optim.Adam(p, lr=LR)
 # Losses
 mse = torch.nn.MSELoss().type(dtype)
 
-if simulated == True:
-    def main():
-        global recons
-        meas_ts = cu.np_to_ts(meas_np.transpose(2,0,1))
-        meas_ts = meas_ts.detach().clone().type(dtype).cuda()
-        print(meas_ts.shape, 'meas')
-        for i in range(num_iter):
-            optimizer.zero_grad()
-            net_input = net_input_saved + (noise.normal_() * reg_noise_std)
-            recons = net(net_input)
-            gen_meas = forward.forward(recons)
-            gen_meas = F.normalize(gen_meas, dim=[1,2], p=2)
-            loss = mse(gen_meas, meas_ts)
-            loss += tv_weight * df.tv_loss(recons)
-            loss.backward()
-            print('Iteration %05d, loss %.8f '%(i, loss.item()), '\r',  end='')
-            if i % 100 == 0:
-                helper.plot3d(recons)
-                print('Iteration {}, loss {:.8f}'.format(i, loss.item()))
-            optimizer.step()
-        full_recons= helper.preplot2(recons)
-        return full_recons
-else:
-    def main():
+% dont need simulated = true because we using their data which uses is
+% false
+def main():
         full_recons = []
         for channel in range (3):
             meas_ts = cu.np_to_ts(meas_np[:,:,channel])
