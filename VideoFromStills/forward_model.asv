@@ -36,19 +36,19 @@ classdef forward_model < handle
             out_r = real(out);
         end
         
-        function cropped = crop(model, in_image)
+        function cropped = crop(in_image)
             [rows, cols] = size(in_image);
             start_row = floor((rows - model.DIMS0) / 2) + 1;
             start_col = floor((cols - model.DIMS1) / 2) + 1;
             end_row = start_row + model.DIMS0 - 1;
-            end_col = start_col + model.DIMS1 - 1;
-            cropped = in_image(start_row:end_row, start_col:end_col);
+            end_col = start_col + original_size(2) - 1;
+            cropped = image(start_row:end_row, start_col:end_col);
         end
         
         function output = forward_zero_pad(model, in_image)
             [rows, cols] = size(in_image);
             padded = zeros(2 * rows, 2 * cols, 'like', image);
-            padded(1:rows, 1:cols) = in_image;
+            padded(1:rows, 1:cols) = image;
             output = model.Hfor(padded);
             output = crop(output) .* model.eraser;
         end
