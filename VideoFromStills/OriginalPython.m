@@ -84,7 +84,6 @@ noise = net_input.detach().clone()
 
 # initialize network and optimizer
 
-
 NET_TYPE = 'skip' 
 net = md.get_net(input_depth, NET_TYPE, pad, n_channels=72, skip_n33d=128,  skip_n33u=128,  skip_n11=4,  num_scales=5,upsample_mode='bilinear').type(dtype)
 
@@ -92,33 +91,33 @@ p = [x for x in net.parameters()]
 optimizer = torch.optim.Adam(p, lr=LR)
 
 # Losses
-mse = torch.nn.MSELoss().type(dtype)
+mse_loss = torch.nn.MSELoss().type(dtype)
 
 % dont need simulated = true because we using their data which uses is
 % false
 def main():
-        full_recons = []
-        for channel in range (3):
-            meas_ts = cu.np_to_ts(meas_np[:,:,channel])
-            meas_ts = meas_ts.detach().clone().type(dtype).cuda()
+    full_recons = []
+    for channel in range (3):
+        meas_ts = cu.np_to_ts(meas_np[:,:,channel])
+        meas_ts = meas_ts.detach().clone().type(dtype).cuda()
 
-            for i in range(num_iter):
-                optimizer.zero_grad()
-                net_input = net_input_saved + (noise.normal_() * reg_noise_std)
-                recons = net(net_input)
-                gen_meas = forward.forward(recons)
-                gen_meas = F.normalize(gen_meas, dim=[1,2], p=2)
-                loss = mse(gen_meas, meas_ts)
-                loss += tv_weight * df.tv_loss(recons)
-                loss.backward()
-                print('Iteration %05d, loss %.8f '%(i, loss.item()), '\r',  end='')
-                if i % 100 == 0:
-                    helper.plot(channel, recons)
-                    print('Iteration {}, loss {:.8f}'.format(i, loss.item()))
-                optimizer.step()
-            full_recons.append(helper.preplot(recons))
-        full_recons = np.stack(full_recons ,-2)
-        return full_recons
+        for i in range(num_iter):
+            optimizer.zero_grad()
+            net_input = net_input_saved + (noise.normal_() * reg_noise_std)
+            recons = net(net_input)
+            gen_meas = forward.forward(recons)
+            gen_meas = F.normalize(gen_meas, dim=[1,2], p=2)
+            loss = mse(gen_meas, meas_ts)
+            loss += tv_weight * df.tv_loss(recons)
+            loss.backward()
+            print('Iteration %05d, loss %.8f '%(i, loss.item()), '\r',  end='')
+            if i % 100 == 0:
+                helper.plot(channel, recons)
+                print('Iteration {}, loss {:.8f}'.format(i, loss.item()))
+            optimizer.step()
+        full_recons.append(helper.preplot(recons))
+    full_recons = np.stack(full_recons ,-2)
+    return full_recons
         
 %CELL 6       
 full_recons = main()

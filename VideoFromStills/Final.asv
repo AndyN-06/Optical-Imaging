@@ -74,8 +74,8 @@ p = 0; % have to implement net first
 optimizer = Adam(p, LR, 500);
 
 % Losses
+mse_loss = 
 
-% Inverse Problem function
 function full_recons = main(meas_np, optimizer, net_input_saved, noise, net, forward, )
     % array to store images
     full_recons = [];
@@ -94,7 +94,7 @@ function full_recons = main(meas_np, optimizer, net_input_saved, noise, net, for
             gen_meas = forward_model.forward(recons);
             gen_meas = normalize(gen_meas, [1 2], 'p', 2);
             
-            loss = mse(gen_meas, meas_ts) + tv_weight * tv_loss(recons);
+            loss = mse_loss(gen_meas, meas_ts) + tv_weight * tv_loss(recons);
             
             loss.backward();
             if mod(i, 100) == 0
