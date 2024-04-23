@@ -12,9 +12,6 @@ if nargin < 2
     beta = 0.5;
 end
 
-%Convert to run on GPU
-x = gpuArray(x);
-
 %Absolute difference between neighboring pixels along both directions
 dh = power(x(:,:,:,2:end) - x(:,:,:,1:end-1), 2);
 dw = power(x(:,:,2:end,:) - x(:,:,1:end-1,:), 2);

@@ -3,11 +3,6 @@
 
 %CELL 1
 %imports that I do not know what is needed yet
-%might need to activate some gpu stuff for computation -> python uses cuda
-    %for this
-    % add parallel computing toolbox for this
-    % run gpuDeviceCount to see if you have gpu available for this
-%external functions added as matlab functions to directory
 
 %CELL 2
 %load the data in
@@ -93,7 +88,7 @@ function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_mod
 
     % for each rgb color channel (1-3)
     for channel = 1:3
-        % set meas_ts to meas_np for that channel and put on GPU
+        % set meas_ts to meas_np for that channel
         meas_ts = meas_np(:,:,channel);
         meas_ts = single(meas_ts);
         

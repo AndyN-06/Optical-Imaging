@@ -20,12 +20,12 @@ classdef forward_model < handle
            model.PAD_SIZE0 = floor(model.DIMS0 / 2);
            model.PAD_SIZE1 = floor(model.DIMS1 / 2);
            
-           model.h_var = gpuArray(single(h));
-           model.h_zeros = gpuArray(zeros(size(model.h_var, 1) * 2, size(model.h_var, 2) * 2, 'single'));
+           model.h_var = single(h);
+           model.h_zeros = single(zeros(size(model.h_var, 1) * 2, size(model.h_var, 2) * 2));
            model.h_complex = cat(3, pad_zeros(model.h_var), model.h_zeros);
-           model.const = gpuArray(single(1 / sqrt(numel(model.h_complex))));
+           model.const = single(1 / sqrt(numel(model.h_complex)));
            model.H = fft2(ifftshift(ifftshift(model.h_complex, 1), 2));
-           model.eraser = gpuArray(single(permute(eraser, [3, 1, 2])));
+           model.eraser = single(permute(eraser, [3, 1, 2]));
         end
         
         function out_r = Hfor(model, x)
