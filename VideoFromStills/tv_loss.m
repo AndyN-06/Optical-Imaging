@@ -1,9 +1,31 @@
-function [outputArg1,outputArg2] = tv_loss(inputArg1,inputArg2)
-%TV_LOSS Summary of this function goes here
-%   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
+function loss = tv_loss(x, beta)
+%tv_loss calculates TV loss for an image 'x'
+%Total-Variation loss is the sum of absolute differences between
+%neighboring pixels in horizontal and vertical directions
+
+%Inputs:
+%   x: the image array
+% beta: See https://arxiv.org/abs/1412.0035 (fig. 2) for effect of 'beta'
+
+%Default value
+if nargin < 2
+    beta = 0.5;
 end
+
+%Convert to run on GPU
+x = gpuArray(x);
+
+%Absolute difference between neighboring pixels along both directions
+dh = power(x(:,:,:,2:end) - x(:,:,:,1:end-1), 2);
+dw = power(x(:,:,2:end,:) - x(:,:,1:end-1,:), 2);
+
+%Sum horizontal and vertical
+loss = sum(dh(:, :, 1:end-1) + dw(:, :, :, 1:end-1), 'all');
+
+
+end
+
+
 
 % ORIGINAL CODE
 % def tv_loss(x, beta = 0.5):
