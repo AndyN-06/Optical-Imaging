@@ -63,16 +63,23 @@ num_iter = 1000;
 noise_size = [size(shutter_mask, 1) * 2, size(shutter_mask, 2) * 2];
 net_input = get_noise(input_depth, INPUT, noise_size);
 
-net_input_saved = gpuArray(net_input);
-noise = gpuArray(net_input);
-
 % init network and optimizer
 NET_TYPE = 'skip';
-net = 0; % models package in python = what in matlab
+net = get_net(input_depth, NET_TYPE, padvar, 'bilinear', 72, 'LeakyReLU', 128, 128, 4, 5, 'stride');
 
-p = 0; % have to implement net first
+p = []; % have to implement net first
+for i = 1:numel(net.Layers)
+    l = net.Layers(i);
+    if isprop(l, 'Weights')  % Check if layer has weights
+        p = [p; l.Weights(:)];  % Collect weights
+    end
+    if isprop(l, 'Bias')  % Check if layer has biases
+        p = [p; l.Bias(:)];  % Collect biases
+    end
+end
+full_recons = main(meas_np, net_input, reg_noise_std, forward, num_iter, p);  
 
-full_recons = main(meas_np, net_input_saved, reg_noise_std, forward, num_iter, p);  
+plot_slider(full_recons);
 
 % Inverse Problem function
 function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_model, num_iter, p)
@@ -88,12 +95,11 @@ function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_mod
     for channel = 1:3
         % set meas_ts to meas_np for that channel and put on GPU
         meas_ts = meas_np(:,:,channel);
-        meas_ts = gpuArray(meas_ts);
         meas_ts = single(meas_ts);
         
         for i = 1:num_iter
             % add noise
-            net_input = net_input_saved + reg_noise_std * randn(size(net_input_saved), 'single', 'gpuArray');
+            net_input = net_input_saved + reg_noise_std * randn(size(net_input_saved), 'single');
             recons = net.forward(net_input); % have to implement based on net
             
                         
@@ -126,3 +132,19 @@ function out = pad(x, py, px)
     end
 end
 
+function plot_slider(full_recons)
+    f = figure("Name", 'Reconstruction Viewer', 'NumberTitle', 'off');
+    ax = axes('Parent', f);
+
+    num_frames = size(full_recons, 4);
+    img = imshow(full_recons(:,:,:,1), 'Parent',ax);
+
+    slider = uicontrol('Parent', f, 'Stle', 'slider', 'Position', [150, 50, 300, 20], 'value', 1, 'min', 1, 'max, num_frames', 'SliderStep', [1/(num_fames-1), 10/(num_frames-1)]);
+    addlistener(slider, 'ContinuousValueChange', @(src, evt) updateImage(src, evt, full_recons, img, ax));
+
+    function updateImages(src, ~, full_recons, img, ax)
+        frame = round(src.Value);
+        set(img, 'CData', full_recons(:,:,:,frame));
+        title(ax, sprintf('Reconstruction: frame %d', frame));
+    end
+end

@@ -48,8 +48,8 @@ h_full = fftshift(fft2(psf_pad));
 
 forward = forward_model(sum(psf, 3), shutter_mask);
 
-%CELL 5
-%define network hyperparameters
+% CELL 5
+% define network hyperparameters
 input_depth = size(shutter_mask, ndims(shutter_mask));
 INPUT = 'noise';
 padvar = 'reflection';
@@ -58,7 +58,7 @@ LR = 1e-3;
 tv_weight = 1e-20;
 reg_noise_std = 0.05;
  
-%initialize network input
+% initialize network input
 num_iter = 1000;
 noise_size = [size(shutter_mask, 1) * 2, size(shutter_mask, 2) * 2];
 net_input = get_noise(input_depth, INPUT, noise_size);
@@ -66,13 +66,15 @@ net_input = get_noise(input_depth, INPUT, noise_size);
 net_input_saved = gpuArray(net_input);
 noise = gpuArray(net_input);
 
-%init network and optimizer
+% init network and optimizer
 NET_TYPE = 'skip';
-net = 0; % models package in python = what in matlab
+net = get_net(input_depth, NET_TYPE, padvar, 'bilinear', 72, 'LeakyReLU', 128, 128, 4, 5, 'stride');
 
 p = 0; % have to implement net first
 
 full_recons = main(meas_np, net_input_saved, reg_noise_std, forward, num_iter, p);  
+
+plot_slider(full_recons);
 
 % Inverse Problem function
 function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_model, num_iter, p)
@@ -94,7 +96,7 @@ function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_mod
         for i = 1:num_iter
             % add noise
             net_input = net_input_saved + reg_noise_std * randn(size(net_input_saved), 'single', 'gpuArray');
-            recons = net(net_input); % idk what this does
+            recons = net.forward(net_input); % have to implement based on net
             
                         
             gen_meas = forward_model.forward(recons);
@@ -102,14 +104,15 @@ function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_mod
             y=sin(gen_meas);
             
             % set gradient
-            [grad, ~] = compute_gradient(meas_ts,X,y);
+            [grad, ~] = compute_gradient(theta, gen_meas, meas_ts);
 
 %             if mod(i, 100) == 0
 %                 plot_channel_reconstructions(channel, recons);
 %             end
             
             % update with Adam
-            theta = Adam(theta, LR, grad, m, v, i - 1);
+            [theta, m, v] = Adam(theta, LR, grad, m, v, t);
+            t = t + 1;
         end
         full_recons(:, :, channel) = preplot(recons);
     end
@@ -122,5 +125,22 @@ function out = pad(x, py, px)
         out = padarray(x, [px, py, 0], 0, 'both');
     elseif ndims(x) == 4
         out = padarray(x, [py, px, 0, 0], 0, 'both');
+    end
+end
+
+function plot_slider(full_recons)
+    f = figure("Name", 'Reconstruction Viewer', 'NumberTitle', 'off');
+    ax = axes('Parent', f);
+
+    num_frames = size(full_recons, 4);
+    img = imshow(full_recons(:,:,:,1), 'Parent',ax);
+
+    slider = uicontrol('Parent', f, 'Stle', 'slider', 'Position', [150, 50, 300, 20], 'value', 1, 'min', 1, 'max, num_frames', 'SliderStep', [1/(num_fames-1), 10/(num_frames-1)]);
+    addlistener(slider, 'ContinuousValueChange', @(src, evt) updateImage(src, evt, full_recons, img, ax));
+
+    function updateImages(src, ~, full_recons, img, ax)
+        frame = round(src.Value);
+        set(img, 'CData', full_recons(:,:,:,frame));
+        title(ax, sprintf('Reconstruction: frame %d', frame));
     end
 end

@@ -88,6 +88,7 @@ NET_TYPE = 'skip'
 net = md.get_net(input_depth, NET_TYPE, pad, n_channels=72, skip_n33d=128,  skip_n33u=128,  skip_n11=4,  num_scales=5,upsample_mode='bilinear').type(dtype)
 
 p = [x for x in net.parameters()]
+    
 optimizer = torch.optim.Adam(p, lr=LR)
 
 # Losses
