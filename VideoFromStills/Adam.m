@@ -1,4 +1,4 @@
-function theta = Adam(theta_init, lr, grad, m, v, t)
+function [theta, m, v] = Adam(theta_init, lr, grad, m, v, t)
 % Define hyperparameters
 
 alpha = lr; % learning rate

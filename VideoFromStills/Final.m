@@ -60,7 +60,7 @@ reg_noise_std = 0.05;
  
 %initialize network input
 num_iter = 1000;
-noise_size = [size(raw_data, 1) * 2, size(raw_data, 2) * 2];
+noise_size = [size(shutter_mask, 1) * 2, size(shutter_mask, 2) * 2];
 net_input = get_noise(input_depth, INPUT, noise_size);
 
 net_input_saved = gpuArray(net_input);
@@ -72,13 +72,18 @@ net = 0; % models package in python = what in matlab
 
 p = 0; % have to implement net first
 
-% Losses
+full_recons = main(meas_np, net_input_saved, reg_noise_std, forward, num_iter, p);  
 
 % Inverse Problem function
-function full_recons = main(meas_np, net_input_saved, forward_model, num_iter, p, )
+function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_model, num_iter, p)
     % array to store images
-    full_recons = zeros(size(meas_np, 1), size(meas_np, 2), 3);;
+    full_recons = zeros(size(meas_np, 1), size(meas_np, 2), 3);
     
+    theta = p;        
+    m = zeros(size(theta)); % first moment estimate
+    v = zeros(size(theta)); % second moment estimate
+    t = 0;
+
     % for each rgb color channel (1-3)
     for channel = 1:3
         % set meas_ts to meas_np for that channel and put on GPU
@@ -86,38 +91,31 @@ function full_recons = main(meas_np, net_input_saved, forward_model, num_iter, p
         meas_ts = gpuArray(meas_ts);
         meas_ts = single(meas_ts);
         
-        m = zeros(size(theta)); % first moment estimate
-        v = zeros(size(theta)); % second moment estimate
-
-        X=1:0.1:10;
-        X=X';
-        y=sin(X);
-        
-        theta = meas_ts;
-        
         for i = 1:num_iter
-            [grad, ~] = compute_gradient(meas_ts,X,y);
-            theta = Adam(theta, LR, grad, m, v, i - 1);
-            % add gaussian noise
-            net_input = net_input_saved + random('Normal', 0, reg_noise_std, size(net_input_saved));
-            recons = net.forward(net_input);
+            % add noise
+            net_input = net_input_saved + reg_noise_std * randn(size(net_input_saved), 'single', 'gpuArray');
+            recons = net.forward(net_input); % have to implement based on net
+            
+                        
             gen_meas = forward_model.forward(recons);
             gen_meas = normalize(gen_meas, [1 2], 'p', 2);
+            y=sin(gen_meas);
             
-            % get mse loss
-            loss = mse(gen_meas, meas_ts) + tv_weight * tv_loss(recons);
-            loss.backward();
+            % set gradient
+            [grad, ~] = compute_gradient(theta, gen_meas, meas_ts);
+
+%             if mod(i, 100) == 0
+%                 plot_channel_reconstructions(channel, recons);
+%             end
             
-            if mod(i, 100) == 0
-                plot_channel_reconstructions(channel, recons);
-            end
+            % update with Adam
+            [theta, m, v] = Adam(theta, LR, grad, m, v, t);
+            t = t + 1;
         end
         full_recons(:, :, channel) = preplot(recons);
     end
 end
-    
 
-%function definitions defined and used in this file
 function out = pad(x, py, px)
     if ndims(x) == 2 %#ok<ISMAT> %if # dimensions = 2 aka its greyscale
         out = padarray(x, [py, px], 0, 'both'); %pad both sides of each dim
