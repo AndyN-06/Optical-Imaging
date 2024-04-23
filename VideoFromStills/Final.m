@@ -48,8 +48,8 @@ h_full = fftshift(fft2(psf_pad));
 
 forward = forward_model(sum(psf, 3), shutter_mask);
 
-%CELL 5
-%define network hyperparameters
+% CELL 5
+% define network hyperparameters
 input_depth = size(shutter_mask, ndims(shutter_mask));
 INPUT = 'noise';
 padvar = 'reflection';
@@ -58,7 +58,7 @@ LR = 1e-3;
 tv_weight = 1e-20;
 reg_noise_std = 0.05;
  
-%initialize network input
+% initialize network input
 num_iter = 1000;
 noise_size = [size(shutter_mask, 1) * 2, size(shutter_mask, 2) * 2];
 net_input = get_noise(input_depth, INPUT, noise_size);
@@ -66,7 +66,7 @@ net_input = get_noise(input_depth, INPUT, noise_size);
 net_input_saved = gpuArray(net_input);
 noise = gpuArray(net_input);
 
-%init network and optimizer
+% init network and optimizer
 NET_TYPE = 'skip';
 net = 0; % models package in python = what in matlab
 
@@ -125,3 +125,4 @@ function out = pad(x, py, px)
         out = padarray(x, [py, px, 0, 0], 0, 'both');
     end
 end
+
