@@ -1,8 +1,51 @@
-function [outputArg1,outputArg2] = get_noise(inputArg1,inputArg2)
-%GET_NOISE Summary of this function goes here
-%   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
+function [net_input] = get_noise(input_depth, method, spatial_size, noise_type, var)
+%get_noise returns a tensor (array) of size [1, input_depth, spatial_size(1), spatial_size(2)]
+%initialized in a specific way depending on "method"
+
+%Inputs:
+%   input_depth: number of channels in the tensor
+%   method: 'noise' for filling tensor with noise; 'meshgrid' for meshgrid
+%   spatial_size: spatial size of the tensor to initialize
+%   noise_type: 'u' for uniform; 'n' for normal
+%   var: Scalar for standard deviation of noise
+
+%If spatial size is a single scalar convert to 1x2 array
+if isscalar(spatial_size)
+    spatial_size = [spatial_size, spatial_size];
+end
+
+%If method is noise
+if strcmp(method, 'noise')
+    %Creates "framework" for the tensor
+    if numel(spatial_size) == 2
+        shape = [1, input_depth, spatial_size(1), spatial_size(2)];
+    else
+        shape = [1, input_depth, spatial_size(1), spatial_size(2), spatial_size(3)];
+    end
+    %Initalize zeros to chosen size
+    net_input = zeros(shape);
+    %Fill with noise and multiply by variance
+    if noise_type == 'u'
+        x = rand(size(x));
+    elseif noise_type == 'n'
+        x = randn(size(x));
+    else
+        error('Invalid noise type');
+    end
+    net_input = net_input .* var;
+
+elseif strcmp(method, 'meshgrid')
+    %Input depth must be 2, throw an error if not
+    assert(input_depth == 2);
+    %Don't 100% understand what this is doing
+    [X, Y] = meshgrid((0:(spatial_size(2)-1))/(spatial_size(2)-1), (0:(spatial_size(1)-1))/(spatial_size(1)-1));
+    mesh_temp = cat(1, X, Y);
+    net_input = reshape(mesh_temp, [1, input_depth, spatial_size]);
+else
+    assert(false); %Throw error if method not on list
+end
+
+
 end
 
 % ORIGINAL PYTHON CODE
