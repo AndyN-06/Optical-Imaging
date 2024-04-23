@@ -14,6 +14,16 @@ if isscalar(spatial_size)
     spatial_size = [spatial_size, spatial_size];
 end
 
+%Default value for noise type
+if nargin < 4
+    noise_type = 'u';
+end
+
+%Default value for noise variance
+if nargin < 5
+    var = 1/10;
+end
+
 %If method is noise
 if strcmp(method, 'noise')
     %Creates "framework" for the tensor
@@ -24,7 +34,7 @@ if strcmp(method, 'noise')
     end
     %Initalize zeros to chosen size
     net_input = zeros(shape);
-    %Fill with noise and multiply by variance
+    %Fill with noise
     if noise_type == 'u'
         x = rand(size(x));
     elseif noise_type == 'n'
@@ -32,6 +42,8 @@ if strcmp(method, 'noise')
     else
         error('Invalid noise type');
     end
+
+    %Multiply by variance
     net_input = net_input .* var;
 
 elseif strcmp(method, 'meshgrid')
