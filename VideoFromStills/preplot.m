@@ -1,8 +1,17 @@
-function [outputArg1,outputArg2] = preplot(inputArg1,inputArg2)
-%PREPLOT Summary of this function goes here
-%   Detailed explanation goes here
-outputArg1 = inputArg1;
-outputArg2 = inputArg2;
+function recons = preplot(recons)
+%preplot reorders the input (image?) array and discards the 1/4 boundary in
+%the first two dimensions while keeping the middle 1/2
+
+%Reorder input array
+recons = permute(recons, [2, 3, 1]);
+
+%Rescale by dividing with maximum value
+recons = recons / max(recons, [], 'all');
+
+%Determine size of array and return middle 1/2 in first two dimensions
+[m, n, ~] = size(recons);
+recons = recons(floor(m/4) : floor(3*m/4), floor(n/4) : floor(3*n/4), :);
+
 end
 
 %OG CODE
