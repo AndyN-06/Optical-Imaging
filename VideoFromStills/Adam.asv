@@ -6,6 +6,12 @@ beta1 = 0.9; % decay rate for first moment estimate
 beta2 = 0.999; % decay rate for second moment estimate
 epsilon = 1e-8; % constant to avoid division by zero
 
+% Define initial parameters
+theta = theta_init;
+
+    % Compute gradient of loss function with respect to parameters
+[grad, ~] = compute_gradient(theta,X,y);
+
     % Update first moment estimate
 m = beta1 * m + (1 - beta1) * grad;
 
@@ -21,6 +27,7 @@ learning_rate = alpha ./ (sqrt(v_hat) + epsilon);
     % Save learning rate for current iteration
 learning_rates(t) = learning_rate(1); % assuming theta is a column vector
     % Update parameters
-theta = theta_init - learning_rate .* m_hat;
+theta = theta - learning_rate .* m_hat;
+end
 end
 
