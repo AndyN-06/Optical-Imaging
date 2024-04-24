@@ -57,7 +57,7 @@ classdef forward_model < handle
             output = model.Hfor(in_image);
             output = crop(output) .* model.eraser;
         end
-    end      
+    end     
 end
 
 %ORIGINAL CODE

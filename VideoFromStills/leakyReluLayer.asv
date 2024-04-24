@@ -1,0 +1,9 @@
+function layer = leakyReluLayer(alpha, varargin)
+    arguments
+        alpha double = 0.01
+        varargin.Name string
+    end
+    layer = nnet.cnn.layer.ReLU(varargin.Name, 'Method', 'leaky', 'Scale', alpha);
+end
+
+

@@ -35,7 +35,7 @@ set(gca, 'Visible', 'on');
 py = floor(DIMS0 / 2);
 px = floor(DIMS1 /2);
  
-psf_pad = pad(psf); %function def at bottom of file
+psf_pad = pad(psf, 1, 2); %function def at bottom of file
  
 h_full = fftshift(fft2(psf_pad));
  
@@ -56,22 +56,16 @@ reg_noise_std = 0.05;
 % initialize network input
 num_iter = 1000;
 noise_size = [size(shutter_mask, 1) * 2, size(shutter_mask, 2) * 2];
-net_input = get_noise(input_depth, INPUT, noise_size);
+net_input = get_noise(input_depth, INPUT, noise_size, 1/10);
+
 
 % init network and optimizer
 NET_TYPE = 'skip';
 net = get_net(input_depth, NET_TYPE, padvar, 'bilinear', 72, 'LeakyReLU', 128, 128, 4, 5, 'stride');
 
-p = []; % have to implement net first
-for i = 1:numel(net.Layers)
-    l = net.Layers(i);
-    if isprop(l, 'Weights')  % Check if layer has weights
-        p = [p; l.Weights(:)];  % Collect weights
-    end
-    if isprop(l, 'Bias')  % Check if layer has biases
-        p = [p; l.Bias(:)];  % Collect biases
-    end
-end
+lgraph = layerGraph(net);
+p = {lgraph.Layers(:).Weights};
+
 full_recons = main(meas_np, net_input, reg_noise_std, forward, num_iter, p);  
 
 plot_slider(full_recons);
@@ -81,9 +75,8 @@ function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_mod
     % array to store images
     full_recons = zeros(size(meas_np, 1), size(meas_np, 2), 3);
     
-    theta = p;        
-    m = zeros(size(theta)); % first moment estimate
-    v = zeros(size(theta)); % second moment estimate
+    m = cellfun(@(x) zeros(size(x)), p, 'UniformOutput', false); % first moment estimate
+    v = cellfun(@(x) zeros(size(x)), p, 'UniformOutput', false); % second moment estimate
     t = 0;
 
     % for each rgb color channel (1-3)
@@ -95,23 +88,22 @@ function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_mod
         for i = 1:num_iter
             % add noise
             net_input = net_input_saved + reg_noise_std * randn(size(net_input_saved), 'single');
-            recons = net.forward(net_input); % have to implement based on net
-            
                         
-            gen_meas = forward_model.forward(recons);
-            gen_meas = normalize(gen_meas, [1 2], 'p', 2);
-            y=sin(gen_meas);
+            recons = forward_model.forward(net_input);
+            gen_meas = normalize(recons, [1 2], 'p', 2);
             
             % set gradient
-            [grad, ~] = compute_gradient(theta, gen_meas, meas_ts);
+            [grad, ~] = compute_gradient(p, gen_meas, meas_ts);
 
 %             if mod(i, 100) == 0
 %                 plot_channel_reconstructions(channel, recons);
 %             end
             
             % update with Adam
-            [theta, m, v] = Adam(theta, LR, grad, m, v, t);
             t = t + 1;
+            for j = 1:numel(p)
+                [p{j}, m{j}, v{j}] = Adam(p{j}, LR, grad{j}, m{j}, v{j}, t);
+            end
         end
         full_recons(:, :, channel) = preplot(recons);
     end
@@ -131,15 +123,24 @@ function plot_slider(full_recons)
     f = figure("Name", 'Reconstruction Viewer', 'NumberTitle', 'off');
     ax = axes('Parent', f);
 
-    num_frames = size(full_recons, 4);
-    img = imshow(full_recons(:,:,:,1), 'Parent',ax);
+    num_frames = size(full_recons, 3);  % Assuming third dimension is the number of frames
+    img = imshow(full_recons(:, :, :, 1), 'Parent', ax);  % Correct initial display assuming RGB and frames along 4th dim
 
-    slider = uicontrol('Parent', f, 'Stle', 'slider', 'Position', [150, 50, 300, 20], 'value', 1, 'min', 1, 'max, num_frames', 'SliderStep', [1/(num_fames-1), 10/(num_frames-1)]);
-    addlistener(slider, 'ContinuousValueChange', @(src, evt) updateImage(src, evt, full_recons, img, ax));
+    % Correct the 'Style' typo and the 'max' property syntax in the slider setup
+    slider = uicontrol('Parent', f, 'Style', 'slider', ...
+                       'Position', [150, 50, 300, 20], ...
+                       'Value', 1, 'Min', 1, 'Max', num_frames, ...
+                       'SliderStep', [1/(num_frames-1), 10/(num_frames-1)]);
 
-    function updateImages(src, ~, full_recons, img, ax)
+    % Update the event name from 'ContinuousValueChange' to 'ContinuousValueChanging'
+    % This is necessary for compatibility with different MATLAB versions
+    % Also, fix function name typo from 'updateImages' to 'updateImage'
+    addlistener(slider, 'ContinuousValueChanging', @(src, evt) updateImage(src, full_recons, img, ax));
+
+    % Define the updateImage function within the plot_slider function
+    function updateImage(src, full_recons, img, ax)
         frame = round(src.Value);
-        set(img, 'CData', full_recons(:,:,:,frame));
-        title(ax, sprintf('Reconstruction: frame %d', frame));
+        set(img, 'CData', full_recons(:, :, :, frame));
+        title(ax, sprintf('Reconstruction: Frame %d', frame));
     end
 end

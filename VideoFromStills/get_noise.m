@@ -1,4 +1,4 @@
-function [net_input] = get_noise(input_depth, method, spatial_size, noise_type, var)
+function [net_input] = get_noise(input_depth, method, spatial_size, var)
 %get_noise returns a tensor (array) of size [1, input_depth, spatial_size(1), spatial_size(2)]
 %initialized in a specific way depending on "method"
 
@@ -15,9 +15,9 @@ if isscalar(spatial_size)
 end
 
 %Default value for noise type
-if nargin < 4
-    noise_type = 'u';
-end
+% if nargin < 4
+%     noise_type = 'u';
+% end
 
 %Default value for noise variance
 if nargin < 5
@@ -25,37 +25,25 @@ if nargin < 5
 end
 
 %If method is noise
-if strcmp(method, 'noise')
     %Creates "framework" for the tensor
-    if numel(spatial_size) == 2
-        shape = [1, input_depth, spatial_size(1), spatial_size(2)];
-    else
-        shape = [1, input_depth, spatial_size(1), spatial_size(2), spatial_size(3)];
-    end
-    %Initalize zeros to chosen size
-    net_input = zeros(shape);
-    %Fill with noise
-    if noise_type == 'u'
-        x = rand(size(x));
-    elseif noise_type == 'n'
-        x = randn(size(x));
-    else
-        error('Invalid noise type');
-    end
-
-    %Multiply by variance
-    net_input = net_input .* var;
-
-elseif strcmp(method, 'meshgrid')
-    %Input depth must be 2, throw an error if not
-    assert(input_depth == 2);
-    %Don't 100% understand what this is doing
-    [X, Y] = meshgrid((0:(spatial_size(2)-1))/(spatial_size(2)-1), (0:(spatial_size(1)-1))/(spatial_size(1)-1));
-    mesh_temp = cat(1, X, Y);
-    net_input = reshape(mesh_temp, [1, input_depth, spatial_size]);
+if numel(spatial_size) == 2
+   shape = [1, input_depth, spatial_size(1), spatial_size(2)];
 else
-    assert(false); %Throw error if method not on list
+   shape = [1, input_depth, spatial_size(1), spatial_size(2), spatial_size(3)];
 end
+
+    %Fill with noise  & mult by variance
+net_input = randn(shape) * var;
+
+% elseif strcmp(method, 'meshgrid')
+%     %Input depth must be 2, throw an error if not
+%     assert(input_depth == 2);
+%     %Don't 100% understand what this is doing
+%     [X, Y] = meshgrid((0:(spatial_size(2)-1))/(spatial_size(2)-1), (0:(spatial_size(1)-1))/(spatial_size(1)-1));
+%     mesh_temp = cat(1, X, Y);
+%     net_input = reshape(mesh_temp, [1, input_depth, spatial_size]);
+% else
+%     assert(false); %Throw error if method not on list
 
 
 end

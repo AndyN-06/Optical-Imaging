@@ -3,11 +3,6 @@
 
 %CELL 1
 %imports that I do not know what is needed yet
-%might need to activate some gpu stuff for computation -> python uses cuda
-    %for this
-    % add parallel computing toolbox for this
-    % run gpuDeviceCount to see if you have gpu available for this
-%external functions added as matlab functions to directory
 
 %CELL 2
 %load the data in
@@ -40,7 +35,7 @@ set(gca, 'Visible', 'on');
 py = floor(DIMS0 / 2);
 px = floor(DIMS1 /2);
  
-psf_pad = pad(psf); %function def at bottom of file
+psf_pad = pad(psf, 1, 2); %function def at bottom of file
  
 h_full = fftshift(fft2(psf_pad));
  
@@ -61,18 +56,17 @@ reg_noise_std = 0.05;
 % initialize network input
 num_iter = 1000;
 noise_size = [size(shutter_mask, 1) * 2, size(shutter_mask, 2) * 2];
-net_input = get_noise(input_depth, INPUT, noise_size);
+net_input = get_noise(input_depth, INPUT, noise_size, 1/10);
 
-net_input_saved = gpuArray(net_input);
-noise = gpuArray(net_input);
 
 % init network and optimizer
 NET_TYPE = 'skip';
 net = get_net(input_depth, NET_TYPE, padvar, 'bilinear', 72, 'LeakyReLU', 128, 128, 4, 5, 'stride');
 
-p = 0; % have to implement net first
+lgraph = layerGraph(net);
+p = {lgraph.Layers(:).Weights};
 
-full_recons = main(meas_np, net_input_saved, reg_noise_std, forward, num_iter, p);  
+full_recons = main(meas_np, net_input, reg_noise_std, forward, num_iter, p);  
 
 plot_slider(full_recons);
 
@@ -81,38 +75,34 @@ function full_recons = main(meas_np, net_input_saved, reg_noise_std, forward_mod
     % array to store images
     full_recons = zeros(size(meas_np, 1), size(meas_np, 2), 3);
     
-    theta = p;        
-    m = zeros(size(theta)); % first moment estimate
-    v = zeros(size(theta)); % second moment estimate
+    m = cellfun(@(x) zeros(size(x)), p, 'UniformOutput', false); % first moment estimate
+    v = cellfun(@(x) zeros(size(x)), p, 'UniformOutput', false); % second moment estimate
     t = 0;
 
     % for each rgb color channel (1-3)
     for channel = 1:3
-        % set meas_ts to meas_np for that channel and put on GPU
+        % set meas_ts to meas_np for that channel
         meas_ts = meas_np(:,:,channel);
-        meas_ts = gpuArray(meas_ts);
         meas_ts = single(meas_ts);
         
         for i = 1:num_iter
             % add noise
-            net_input = net_input_saved + reg_noise_std * randn(size(net_input_saved), 'single', 'gpuArray');
+            net_input = net_input_saved + reg_noise_std * randn(size(net_input_saved), 'single');
             recons = net.forward(net_input); % have to implement based on net
-            
                         
             gen_meas = forward_model.forward(recons);
             gen_meas = normalize(gen_meas, [1 2], 'p', 2);
-            y=sin(gen_meas);
             
             % set gradient
-            [grad, ~] = compute_gradient(theta, gen_meas, meas_ts);
+            [grad, ~] = compute_gradient(p, gen_meas, meas_ts);
 
 %             if mod(i, 100) == 0
 %                 plot_channel_reconstructions(channel, recons);
 %             end
             
             % update with Adam
-            [theta, m, v] = Adam(theta, LR, grad, m, v, t);
             t = t + 1;
+            [p, m, v] = Adam(p, LR, grad, m, v, t);
         end
         full_recons(:, :, channel) = preplot(recons);
     end

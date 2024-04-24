@@ -3,8 +3,6 @@ function layer = bn(num_features)
     %training
     %https://www.mathworks.com/help/deeplearning/ref/nnet.cnn.layer.batchnormalizationlayer.html
     layer = batchNormalizationLayer('NumChannels', num_features);
-
-
 end
 
 % Original Python:
